@@ -4,7 +4,6 @@ import random
 from allauth.account.views import ConfirmEmailView as AllAuthConfirmEmailView
 from allauth.socialaccount.providers.github.views import GitHubOAuth2Adapter
 from rest_auth.registration.views import LoginView, RegisterView, SocialLoginView
-from rest_framework import permissions, status, viewsets
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -15,6 +14,7 @@ from balance.api.permissions import IsCurrentUser, OncePerDay
 from balance.api.serializers import BalanceSerializer
 from balance.models import Record
 from replies.api.serializers import FlatReplySerializer
+
 from .models import User
 from .permissions import IsVerified, NotPrimary
 from .serializers import EmailAddressSerializer, UserDetailsSerializer
