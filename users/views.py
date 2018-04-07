@@ -2,7 +2,7 @@ import math
 import random
 
 from allauth.account.views import ConfirmEmailView as AllAuthConfirmEmailView
-from rest_framework import permissions, status, viewsets
+from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
@@ -12,9 +12,9 @@ from balance.api.permissions import IsCurrentUser, OncePerDay
 from balance.api.serializers import BalanceSerializer
 from balance.models import Record
 from replies.api.serializers import FlatReplySerializer
-
 from .models import User
-from .serializers import UserDetailsSerializer
+from .permissions import IsVerified, NotPrimary
+from .serializers import EmailAddressSerializer, UserDetailsSerializer
 
 
 class ConfirmEmailView(AllAuthConfirmEmailView):
@@ -72,3 +72,44 @@ class UserViewSets(viewsets.GenericViewSet):
         )
         serializer = BalanceSerializer(record)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class EmailAddressViewSet(mixins.ListModelMixin,
+                          mixins.RetrieveModelMixin,
+                          mixins.CreateModelMixin,
+                          mixins.DestroyModelMixin,
+                          viewsets.GenericViewSet):
+    serializer_class = EmailAddressSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_permissions(self):
+        if self.action == 'destroy':
+            return [permissions.IsAuthenticated(), NotPrimary()]
+        else:
+            return super().get_permissions()
+
+    def get_queryset(self):
+        return self.request.user.emailaddress_set.all()
+
+    def perform_create(self, serializer):
+        email = serializer.save(user=self.request.user)
+        email.send_confirmation(request=self.request)
+
+    @action(methods=['post'], detail=True,
+            permission_classes=[permissions.IsAuthenticated, IsVerified])
+    def set_primary(self, request, pk=None):
+        email = self.get_object()
+        success = email.set_as_primary()
+
+        if success:
+            return Response(status=status.HTTP_201_CREATED)
+        else:
+            return Response(status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=['get'], detail=True,
+            permission_classes=[permissions.IsAuthenticated])
+    def reverify(self, request, pk=None):
+        email = self.get_object()
+        email.send_confirmation(request=self.request)
+
+        return Response(status=status.HTTP_200_OK)

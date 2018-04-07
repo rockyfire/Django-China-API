@@ -4,16 +4,16 @@ from rest_framework.routers import DefaultRouter
 from rest_framework_jwt.views import refresh_jwt_token
 
 from posts.views import PostViewSet
-from tags.views import TagViewSet
 from replies.api.views import ReplyViewSet
-from users.views import UserViewSets
-from users.views import ConfirmEmailView
+from tags.views import TagViewSet
+from users.views import ConfirmEmailView, EmailAddressViewSet, UserViewSets
 
 router = DefaultRouter()
 router.register(r'posts', PostViewSet)
 router.register(r'tags', TagViewSet)
 router.register(r'replies', ReplyViewSet)
 router.register(r'users', UserViewSets)
+router.register(r'users/email', EmailAddressViewSet,base_name='email')
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
